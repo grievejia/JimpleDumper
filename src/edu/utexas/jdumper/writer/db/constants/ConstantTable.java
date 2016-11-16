@@ -1,36 +1,35 @@
-package edu.utexas.jdumper.writer.db;
+package edu.utexas.jdumper.writer.db.constants;
+
+import edu.utexas.jdumper.soot.ConstantKind;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
 
-public class AllocSiteTable
+public class ConstantTable
 {
     private PreparedStatement insertStmt;
 
-    private static final String TABLE_NAME = "allocsites";
+    private static final String TABLE_NAME = "constants";
 
-    public AllocSiteTable(Connection connection) throws SQLException
+    public ConstantTable(Connection connection) throws SQLException
     {
         connection.prepareStatement("DROP TABLE IF EXISTS " + TABLE_NAME).executeUpdate();
         connection.prepareStatement("CREATE TABLE " +
                                     TABLE_NAME +
                                     " (" +
                                     "id INTEGER PRIMARY KEY, " +
-                                    "type INTEGER NOT NULL, " +
-                                    "method INTEGER NOT NULL" +
+                                    "kind INTEGER NOT NULL " +
                                     ")").executeUpdate();
         insertStmt = connection.prepareStatement("INSERT INTO " +
                                                  TABLE_NAME +
-                                                 " VALUES(?, ?, ?)");
+                                                 " VALUES(?, ?)");
     }
 
-    public void insert(int id, int tid, int mid) throws SQLException
+    public void insert(int id, ConstantKind kind) throws SQLException
     {
         insertStmt.setInt(1, id);
-        insertStmt.setInt(2, tid);
-        insertStmt.setInt(3, mid);
+        insertStmt.setInt(2, kind.getKindId());
         insertStmt.executeUpdate();
     }
 }

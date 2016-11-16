@@ -2,6 +2,7 @@ package edu.utexas.jdumper.writer;
 
 import edu.utexas.jdumper.soot.*;
 import edu.utexas.jdumper.writer.db.*;
+import edu.utexas.jdumper.writer.db.constants.*;
 import edu.utexas.jdumper.writer.db.insts.*;
 import edu.utexas.jdumper.writer.db.types.*;
 
@@ -21,13 +22,20 @@ class DatabaseWriter
     SuperClassTable superClassTable;
     SuperInterfaceTable superInterfaceTable;
 
+    ConstantTable constantTable;
+    IntConstantTable intConstantTable;
+    LongConstantTable longConstantTable;
+    FloatConstantTable floatConstantTable;
+    DoubleConstantTable doubleConstantTable;
+    StringConstantTable stringConstantTable;
+    ClassConstantTable classConstantTable;
+
     FieldTable fieldTable;
     MethodTable methodTable;
     MethodParamTable methodParamTable;
     MethodReturnTable methodReturnTable;
     ExceptionDeclTable exceptionDeclTable;
     VariableTable variableTable;
-    ConstantTable constantTable;
     ExceptionHandlerTable exceptionHandlerTable;
 
     InstructionTable instructionTable;
@@ -36,8 +44,6 @@ class DatabaseWriter
     EnterMonitorInstTable enterMonitorInstTable;
     ExitMonitorInstTable exitMonitorInstTable;
     ReturnInstTable returnInstTable;
-    AllocSiteTable allocSiteTable;
-    EmptyArrayTable emptyArrayTable;
     AssignAllocInstTable assignAllocInstTable;
     AssignConstInstTable assignConstInstTable;
     AssignVariableInstTable assignVariableInstTable;
@@ -73,13 +79,20 @@ class DatabaseWriter
         superClassTable = new SuperClassTable(connection);
         superInterfaceTable = new SuperInterfaceTable(connection);
 
+        constantTable = new ConstantTable(connection);
+        intConstantTable = new IntConstantTable(connection);
+        longConstantTable = new LongConstantTable(connection);
+        floatConstantTable = new FloatConstantTable(connection);
+        doubleConstantTable = new DoubleConstantTable(connection);
+        stringConstantTable = new StringConstantTable(connection);
+        classConstantTable = new ClassConstantTable(connection);
+
         fieldTable = new FieldTable(connection);
         methodTable = new MethodTable(connection);
         methodParamTable = new MethodParamTable(connection);
         methodReturnTable = new MethodReturnTable(connection);
         exceptionDeclTable = new ExceptionDeclTable(connection);
         variableTable = new VariableTable(connection);
-        constantTable = new ConstantTable(connection);
         instructionTable = new InstructionTable(connection);
         exceptionHandlerTable = new ExceptionHandlerTable(connection);
 
@@ -88,8 +101,6 @@ class DatabaseWriter
         enterMonitorInstTable = new EnterMonitorInstTable(connection);
         exitMonitorInstTable = new ExitMonitorInstTable(connection);
         returnInstTable = new ReturnInstTable(connection);
-        allocSiteTable = new AllocSiteTable(connection);
-        emptyArrayTable = new EmptyArrayTable(connection);
         assignAllocInstTable = new AssignAllocInstTable(connection);
         assignConstInstTable = new AssignConstInstTable(connection);
         assignVariableInstTable = new AssignVariableInstTable(connection);
@@ -163,9 +174,9 @@ class DatabaseWriter
         methodTable.insert(mid, name, sig, pid, modifier);
     }
 
-    void writeMethodParamType(int mid, int index, int tid) throws SQLException
+    void writeMethodParam(int mid, int index, int vid) throws SQLException
     {
-        methodParamTable.insert(mid, index, tid);
+        methodParamTable.insert(mid, index, vid);
     }
 
     void writeMethodReturnType(int mid, int tid) throws SQLException
@@ -173,9 +184,38 @@ class DatabaseWriter
         methodReturnTable.insert(mid, tid);
     }
 
-    void writeConstant(int cid, ConstantKind kind) throws SQLException
-    {
-        constantTable.insert(cid, kind);
+    void writeNullConstant(int cid) throws SQLException {
+        constantTable.insert(cid, ConstantKind.NULLCONST);
+    }
+
+    void writeIntConstant(int cid, int value) throws SQLException {
+        constantTable.insert(cid, ConstantKind.INTCONST);
+        intConstantTable.insert(cid, value);
+    }
+
+    void writeLongConstant(int cid, long value) throws SQLException {
+        constantTable.insert(cid, ConstantKind.LONGCONST);
+        longConstantTable.insert(cid, value);
+    }
+
+    void writeFloatConstant(int cid, float value) throws SQLException {
+        constantTable.insert(cid, ConstantKind.FLOATCONST);
+        floatConstantTable.insert(cid, value);
+    }
+
+    void writeDoubleConstant(int cid, double value) throws SQLException {
+        constantTable.insert(cid, ConstantKind.DOUBLECONST);
+        doubleConstantTable.insert(cid, value);
+    }
+
+    void writeStringConstant(int cid, String value) throws SQLException {
+        constantTable.insert(cid, ConstantKind.STRCONST);
+        stringConstantTable.insert(cid, value);
+    }
+
+    void writeClassConstant(int cid, String className) throws SQLException {
+        constantTable.insert(cid, ConstantKind.CLASSCONST);
+        classConstantTable.insert(cid, className);
     }
 
     void writeVariable(int vid, String name, int tid, int mid) throws SQLException
@@ -264,16 +304,6 @@ class DatabaseWriter
     void writeArgument(int argId, int index, int instId) throws SQLException
     {
         argumentTable.insert(argId, index, instId);
-    }
-
-    void writeAllocSite(int id, int tid, int mid) throws SQLException
-    {
-        allocSiteTable.insert(id, tid, mid);
-    }
-
-    void writeEmptyArray(int id) throws SQLException
-    {
-        emptyArrayTable.insert(id);
     }
 
     void writeAssignAllocInstruction(int id, int lhs, int rhs, int mid) throws SQLException

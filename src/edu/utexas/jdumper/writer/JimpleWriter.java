@@ -35,7 +35,6 @@ public final class JimpleWriter
     private IndexMap<SootVariable> varMap = new IndexMap<>();
     private IndexMap<Constant> constMap = new IndexMap<>();
     private IndexMap<Stmt> stmtMap = new IndexMap<>();
-    int allocIndex = 0;
     private Map<IfStmt, IfInfo> ifMap = new HashMap<>();
     private Map<LookupSwitchStmt, Integer> lookupSwitchMap = new HashMap<>();
     private Map<TableSwitchStmt, Integer> tableSwitchMap = new HashMap<>();
@@ -68,21 +67,39 @@ public final class JimpleWriter
         if (!constMap.exist(constant))
         {
             int id = constMap.getIndex(constant);
-            if (constant instanceof NumericConstant)
+            if (constant instanceof IntConstant)
             {
-                dbWriter.writeConstant(id, ConstantKind.NUMCONST);
+                IntConstant intConst = (IntConstant) constant;
+                dbWriter.writeIntConstant(id, intConst.value);
+            }
+            else if (constant instanceof LongConstant)
+            {
+                LongConstant longConst = (LongConstant) constant;
+                dbWriter.writeLongConstant(id, longConst.value);
+            }
+            else if (constant instanceof FloatConstant)
+            {
+                FloatConstant floatConst = (FloatConstant) constant;
+                dbWriter.writeFloatConstant(id, floatConst.value);
+            }
+            else if (constant instanceof DoubleConstant)
+            {
+                DoubleConstant doubleConst = (DoubleConstant) constant;
+                dbWriter.writeDoubleConstant(id, doubleConst.value);
             }
             else if (constant instanceof NullConstant)
             {
-                dbWriter.writeConstant(id, ConstantKind.NULLCONST);
+                dbWriter.writeNullConstant(id);
             }
             else if (constant instanceof StringConstant)
             {
-                dbWriter.writeConstant(id, ConstantKind.STRCONST);
+                StringConstant strConst = (StringConstant) constant;
+                dbWriter.writeStringConstant(id, strConst.value);
             }
             else if (constant instanceof ClassConstant)
             {
-                dbWriter.writeConstant(id, ConstantKind.CLASSCONST);
+                ClassConstant classConst = (ClassConstant) constant;
+                dbWriter.writeClassConstant(id, classConst.value);
             }
             else
                 throw new RuntimeException("Unsupported constant: " + constant);
@@ -141,9 +158,7 @@ public final class JimpleWriter
     {
         ArrayType allocArrayType = (ArrayType) expr.getType();
         int tid = getTypeId(allocArrayType);
-        int aid = allocIndex; ++allocIndex;
-        dbWriter.writeAllocSite(aid, tid, mid);
-        dbWriter.writeAssignAllocInstruction(sid, lhsId, aid, mid);
+        dbWriter.writeAssignAllocInstruction(sid, lhsId, tid, mid);
 
         Type allocType = allocArrayType.getElementType();
         while (allocType instanceof ArrayType)
@@ -151,10 +166,8 @@ public final class JimpleWriter
             Local tmpLocal = new JimpleLocal("alloc_tmp" + sid, allocType);
             int localId = writeLocal(mid, tmpLocal);
             int subTypeId = getTypeId(allocType);
-            int subAllocId = allocIndex; ++allocIndex;
-            dbWriter.writeAllocSite(subAllocId, subTypeId, mid);
             sid = stmtMap.getNextIndex();
-            dbWriter.writeAssignAllocInstruction(sid, lhsId, subAllocId, mid);
+            dbWriter.writeAssignAllocInstruction(sid, lhsId, subTypeId, mid);
             sid = stmtMap.getNextIndex();
             dbWriter.writeStoreArrayInstruction(sid, lhsId, localId, mid);
 
@@ -202,25 +215,21 @@ public final class JimpleWriter
         {
             NewExpr newExpr = (NewExpr) rhs;
             int tid = typeMap.getIndexOrFail(newExpr.getType());
-            int aid = allocIndex; ++allocIndex;
-            dbWriter.writeAllocSite(aid, tid, mid);
-            dbWriter.writeAssignAllocInstruction(id, lhsId, aid, mid);
+            dbWriter.writeAssignAllocInstruction(id, lhsId, tid, mid);
         }
         else if (rhs instanceof NewArrayExpr)
         {
             NewArrayExpr newExpr = (NewArrayExpr) rhs;
             int tid = getTypeId(newExpr.getType());
-            int aid = allocIndex; ++allocIndex;
-            dbWriter.writeAllocSite(aid, tid, mid);
-            dbWriter.writeAssignAllocInstruction(id, lhsId, aid, mid);
+            dbWriter.writeAssignAllocInstruction(id, lhsId, tid, mid);
 
-            Value sizeVal = newExpr.getSize();
-            if (sizeVal instanceof IntConstant)
-            {
-                IntConstant sizeConst = (IntConstant) sizeVal;
-                if (sizeConst.value == 0)
-                    dbWriter.writeEmptyArray(aid);
-            }
+            // Currently we don't serialize array size yet
+//            Value sizeVal = newExpr.getSize();
+//            if (sizeVal instanceof IntConstant)
+//            {
+//                IntConstant sizeConst = (IntConstant) sizeVal;
+//                ...
+//            }
         }
         else if (rhs instanceof NewMultiArrayExpr)
         {
@@ -929,7 +938,7 @@ public final class JimpleWriter
                 SootVariable var = new ParamVariable(method, i);
                 int vid = varMap.getIndex(var);
                 int tid = getTypeId(method.getParameterType(i));
-                dbWriter.writeMethodParamType(mid, i, tid);
+                dbWriter.writeMethodParam(mid, i, vid);
                 dbWriter.writeVariable(vid, var.getName(), tid, mid);
             }
 

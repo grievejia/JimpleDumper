@@ -4,28 +4,30 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class EmptyArrayTable
+public class MethodReturnTable
 {
     private PreparedStatement insertStmt;
 
-    private static final String TABLE_NAME = "emptyarray";
+    private static final String TABLE_NAME = "methodreturntype";
 
-    public EmptyArrayTable(Connection connection) throws SQLException
+    public MethodReturnTable(Connection connection) throws SQLException
     {
         connection.prepareStatement("DROP TABLE IF EXISTS " + TABLE_NAME).executeUpdate();
         connection.prepareStatement("CREATE TABLE " +
                                     TABLE_NAME +
                                     " (" +
-                                    "id INTEGER PRIMARY KEY " +
+                                    "method INTEGER PRIMARY KEY, " +
+                                    "type INTEGER NOT NULL " +
                                     ")").executeUpdate();
         insertStmt = connection.prepareStatement("INSERT INTO " +
                                                  TABLE_NAME +
-                                                 " VALUES(?)");
+                                                 " VALUES(?, ?)");
     }
 
-    public void insert(int id) throws SQLException
+    public void insert(int mid, int tid) throws SQLException
     {
-        insertStmt.setInt(1, id);
+        insertStmt.setInt(1, mid);
+        insertStmt.setInt(2, tid);
         insertStmt.executeUpdate();
     }
 }
