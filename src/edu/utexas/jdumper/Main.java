@@ -16,15 +16,9 @@ public class Main {
         CommandLine cmd = parseCommandLine(args);
         String outfile = getOutputFileName(cmd);
 
-        List<SootClass> classes;
-        if (cmd.hasOption("J"))
-            classes = SootLoader.loadSootClassesFromJimple(cmd.getOptionValue("J"));
-        else
-        {
-            List<String> appJarList = getApplicationJarList(cmd);
-            List<String> libJarList = getLibraryJarList(cmd);
-            classes = SootLoader.loadSootClasses(appJarList, libJarList);
-        }
+        List<String> appJarList = getApplicationJarList(cmd);
+        List<String> libJarList = getLibraryJarList(cmd);
+        List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList);
         JimpleWriter.writeJimple(outfile, classes);
     }
 
@@ -58,11 +52,6 @@ public class Main {
     {
         Options options = new Options();
 
-        Option readJimple = Option.builder("J")
-                .desc("Read the program from a directory of Jimple files")
-                .longOpt("jimple-dir")
-                .hasArg()
-                .build();
         Option sysJars = Option.builder("l")
                 .desc("library file(s) used with the application (separated by colons) [REQUIRED]")
                 .longOpt("lib")
@@ -78,7 +67,6 @@ public class Main {
                 .longOpt("help")
                 .build();
 
-        options.addOption(readJimple);
         options.addOption(sysJars);
         options.addOption(out);
         options.addOption(help);

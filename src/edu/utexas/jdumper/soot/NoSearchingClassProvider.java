@@ -176,7 +176,7 @@ public class NoSearchingClassProvider implements ClassProvider
 
             try {
                 InputStream stream = resource.open();
-                return new CoffiClassSource(className, stream, null, null);
+                return new CoffiClassSource(className, stream, resource.getName());
             }
             catch(IOException exc) {
                 throw new RuntimeException(exc);
@@ -192,6 +192,7 @@ public class NoSearchingClassProvider implements ClassProvider
      */
     public interface Resource {
         InputStream open() throws IOException;
+        String getName();
     }
 
     /**
@@ -207,6 +208,10 @@ public class NoSearchingClassProvider implements ClassProvider
 
         public InputStream open() throws IOException {
             return new FileInputStream(_file);
+        }
+
+        public String getName() {
+            return _file.getName();
         }
     }
 
@@ -225,6 +230,10 @@ public class NoSearchingClassProvider implements ClassProvider
 
         public InputStream open() throws IOException {
             return doJDKBugWorkaround(_archive.getInputStream(_entry), _entry.getSize());
+        }
+
+        public String getName() {
+            return _archive.getName();
         }
 
         /**
