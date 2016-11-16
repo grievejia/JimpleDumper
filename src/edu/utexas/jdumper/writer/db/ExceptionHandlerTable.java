@@ -17,6 +17,7 @@ public class ExceptionHandlerTable
                                                  TABLE_NAME +
                                                  " (" +
                                                  "id INTEGER PRIMARY KEY, " +
+                                                 "method INTEGER NOT NULL," +
                                                  "type INTEGER NOT NULL, " +
                                                  "param INTEGER NOT NULL, " +
                                                  "start INTEGER NOT NULL, " +
@@ -25,17 +26,18 @@ public class ExceptionHandlerTable
                                                  ")").executeUpdate();
         insertStmt = connection.prepareStatement("INSERT INTO " +
                                                  TABLE_NAME +
-                                                 " VALUES(?, ?, ?, ?, ?, ?)");
+                                                 " VALUES(?, ?, ?, ?, ?, ?, ?)");
     }
 
-    public void insert(int handerId, int typeId, int paramId, int startId, int endId, int dstId) throws SQLException
+    public void insert(int handerId, int methodId, int typeId, int paramId, int startId, int endId, int dstId) throws SQLException
     {
         insertStmt.setInt(1, handerId);
-        insertStmt.setInt(2, typeId);
-        insertStmt.setInt(3, paramId);
-        insertStmt.setInt(4, startId);
-        insertStmt.setInt(5, endId);
-        insertStmt.setInt(6, dstId);
+        insertStmt.setInt(2, methodId);
+        insertStmt.setInt(3, typeId);
+        insertStmt.setInt(4, paramId);
+        insertStmt.setInt(5, startId);
+        insertStmt.setInt(6, endId);
+        insertStmt.setInt(7, dstId);
         insertStmt.executeUpdate();
     }
 }

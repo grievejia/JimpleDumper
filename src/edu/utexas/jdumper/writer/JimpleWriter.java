@@ -709,7 +709,7 @@ public final class JimpleWriter
                 throw new RuntimeException("Trap not supported: " + idStmt.getRightOp());
             int vid = varMap.getIndex(new LocalVariable(lhs));
 
-            dbWriter.writeExceptionHandler(trapid, typeid, vid, startid, endid, hid + 1);
+            dbWriter.writeExceptionHandler(trapid, mid, typeid, vid, startid, endid, hid + 1);
         }
     }
 

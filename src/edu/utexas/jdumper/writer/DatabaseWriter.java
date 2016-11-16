@@ -228,9 +228,9 @@ class DatabaseWriter
        exceptionDeclTable.insert(mid, eid);
     }
 
-    void writeExceptionHandler(int hid, int tid, int pid, int sid, int eid, int did) throws SQLException
+    void writeExceptionHandler(int hid, int mid, int tid, int pid, int sid, int eid, int did) throws SQLException
     {
-       exceptionHandlerTable.insert(hid, tid, pid, sid, eid, did);
+       exceptionHandlerTable.insert(hid, mid, tid, pid, sid, eid, did);
     }
 
     void writeNopInstruction(int id, int mid) throws SQLException
