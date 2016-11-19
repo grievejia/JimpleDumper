@@ -154,28 +154,6 @@ public final class JimpleWriter
             writeLocal(mid, local);
     }
 
-    private void writeAssignNewMultiArray(int mid, int sid, int lhsId, NewMultiArrayExpr expr) throws SQLException
-    {
-        ArrayType allocArrayType = (ArrayType) expr.getType();
-        int tid = getTypeId(allocArrayType);
-        dbWriter.writeAssignAllocInstruction(sid, lhsId, tid, mid);
-
-        Type allocType = allocArrayType.getElementType();
-        while (allocType instanceof ArrayType)
-        {
-            Local tmpLocal = new JimpleLocal("alloc_tmp" + sid, allocType);
-            int localId = writeLocal(mid, tmpLocal);
-            int subTypeId = getTypeId(allocType);
-            sid = stmtMap.getNextIndex();
-            dbWriter.writeAssignAllocInstruction(sid, lhsId, subTypeId, mid);
-            sid = stmtMap.getNextIndex();
-            dbWriter.writeStoreArrayInstruction(sid, lhsId, localId, mid);
-
-            lhsId = localId;
-            allocType = ((ArrayType) allocType).getElementType();
-        }
-    }
-
     private void writeAssignToLocal(int mid, AssignStmt stmt, int lhsId) throws SQLException
     {
         int id = stmtMap.getIndex(stmt);
@@ -221,19 +199,66 @@ public final class JimpleWriter
         {
             NewArrayExpr newExpr = (NewArrayExpr) rhs;
             int tid = getTypeId(newExpr.getType());
-            dbWriter.writeAssignAllocInstruction(id, lhsId, tid, mid);
 
-            // Currently we don't serialize array size yet
-//            Value sizeVal = newExpr.getSize();
-//            if (sizeVal instanceof IntConstant)
-//            {
-//                IntConstant sizeConst = (IntConstant) sizeVal;
-//                ...
-//            }
+            Value sizeVal = newExpr.getSize();
+            int vid;
+            if (sizeVal instanceof Local)
+            {
+                Local local = (Local) sizeVal;
+                vid = varMap.getIndex(new LocalVariable(local));
+            }
+            else if (sizeVal instanceof Constant)
+            {
+                // Fabricate an ASSIGN_CONST instruction here
+                Constant c = (Constant) sizeVal;
+                int cid = getConstantId(c);
+                Local l = new JimpleLocal("const" + id, c.getType());
+                vid = writeLocal(mid, l);
+                dbWriter.writeAssignConstInstruction(id, vid, cid, mid);
+
+                id = stmtMap.getNextIndex();
+            }
+            else
+                throw new RuntimeException("Unsupported alloc size value: " + sizeVal);
+
+            dbWriter.writeAllocSize(vid, 0, id);
+            dbWriter.writeAssignAllocInstruction(id, lhsId, tid, mid);
         }
         else if (rhs instanceof NewMultiArrayExpr)
         {
-            writeAssignNewMultiArray(mid, id, lhsId, (NewMultiArrayExpr) rhs);
+            NewMultiArrayExpr newExpr = (NewMultiArrayExpr) rhs;
+            int tid = getTypeId(newExpr.getType());
+
+            ArrayList<Integer> sizeList = new ArrayList<>();
+            for (int i = 0, e = newExpr.getSizeCount(); i < e; ++i) {
+                Value sizeVal = newExpr.getSize(i);
+                int vid;
+                if (sizeVal instanceof Local)
+                {
+                    Local local = (Local) sizeVal;
+                    vid = varMap.getIndex(new LocalVariable(local));
+                }
+                else if (sizeVal instanceof Constant)
+                {
+                    // Fabricate an ASSIGN_CONST instruction here
+                    Constant c = (Constant) sizeVal;
+                    int cid = getConstantId(c);
+                    Local l = new JimpleLocal("const" + id, c.getType());
+                    vid = writeLocal(mid, l);
+                    dbWriter.writeAssignConstInstruction(id, vid, cid, mid);
+
+                    id = stmtMap.getNextIndex();
+                }
+                else
+                    throw new RuntimeException("Unsupported alloc size value: " + sizeVal);
+                sizeList.add(vid);
+            }
+
+            dbWriter.writeAssignAllocInstruction(id, lhsId, tid, mid);
+            for (int i = 0, e = sizeList.size(); i < e; ++i) {
+                Integer vid = sizeList.get(i);
+                dbWriter.writeAllocSize(vid, i, id);
+            }
         }
         else if (rhs instanceof Constant)
         {
@@ -259,7 +284,28 @@ public final class JimpleWriter
             ArrayRef arrayRef = (ArrayRef) rhs;
             Local base = (Local) arrayRef.getBase();
             int baseId = varMap.getIndex(new LocalVariable(base));
-            dbWriter.writeLoadArrayInstruction(id, lhsId, baseId, mid);
+            Value index = arrayRef.getIndex();
+            int iid;
+            if (index instanceof Local)
+            {
+                Local local = (Local) index;
+                iid = varMap.getIndex(new LocalVariable(local));
+            }
+            else if (index instanceof Constant)
+            {
+                // Fabricate an ASSIGN_CONST instruction here
+                Constant c = (Constant) index;
+                int cid = getConstantId(c);
+                Local l = new JimpleLocal("const" + id, c.getType());
+                iid = writeLocal(mid, l);
+                dbWriter.writeAssignConstInstruction(id, iid, cid, mid);
+
+                id = stmtMap.getNextIndex();
+            }
+            else
+                throw new RuntimeException("Unsupported operand: " + index);
+
+            dbWriter.writeLoadArrayInstruction(id, lhsId, baseId, iid, mid);
         }
         else if (rhs instanceof BinopExpr)
         {
@@ -410,9 +456,28 @@ public final class JimpleWriter
         {
             ArrayRef arrayRef = (ArrayRef) lhs;
             Local base = (Local) arrayRef.getBase();
-            Value idxVal = arrayRef.getIndex();
             int baseId = varMap.getIndex(new LocalVariable(base));
-            dbWriter.writeStoreArrayInstruction(id, baseId, rhsId, mid);
+            Value index = arrayRef.getIndex();
+            int iid;
+            if (index instanceof Local)
+            {
+                Local local = (Local) index;
+                iid = varMap.getIndex(new LocalVariable(local));
+            }
+            else if (index instanceof Constant)
+            {
+                // Fabricate an ASSIGN_CONST instruction here
+                Constant c = (Constant) index;
+                int cid = getConstantId(c);
+                Local l = new JimpleLocal("const" + id, c.getType());
+                iid = writeLocal(mid, l);
+                dbWriter.writeAssignConstInstruction(id, iid, cid, mid);
+
+                id = stmtMap.getNextIndex();
+            }
+            else
+                throw new RuntimeException("Unsupported operand: " + index);
+            dbWriter.writeStoreArrayInstruction(id, baseId, iid, rhsId, mid);
         }
         else
             throw new RuntimeException("Unsupported assignment lhs: " + lhs);
@@ -951,15 +1016,14 @@ public final class JimpleWriter
 
             if (!method.isAbstract() && !method.isNative())
             {
+                if (method.getName() == "getAnnotation") {
+                    System.out.println();
+                }
                 // This is an EXTREMELY slow operation
                 if (!method.hasActiveBody())
                     method.retrieveActiveBody();
 
-                // Transform to SSA
                 Body body = method.getActiveBody();
-                body = Shimple.v().newBody(body);
-                method.setActiveBody(body);
-
                 writeBody(mid, body);
                 method.releaseActiveBody();
             }
@@ -1015,9 +1079,13 @@ public final class JimpleWriter
 
             JimpleWriter writer = new JimpleWriter(connection);
             System.out.println("[JimpleDumper] Database connection established");
-            writer.writeClasses(classes);
 
+            long startTime = System.currentTimeMillis();
+            writer.writeClasses(classes);
             connection.commit();
+
+            double elapsedTime = (System.currentTimeMillis() - startTime) / 1000;
+            System.out.println("[JimpleDumper] Database transaction takes " + elapsedTime + " seconds to finish");
             System.out.println("[JimpleDumper] Program serialization succeeded");
         } catch (SQLException e)
         {

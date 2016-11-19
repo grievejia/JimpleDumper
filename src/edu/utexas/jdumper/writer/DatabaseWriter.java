@@ -45,6 +45,7 @@ class DatabaseWriter
     ExitMonitorInstTable exitMonitorInstTable;
     ReturnInstTable returnInstTable;
     AssignAllocInstTable assignAllocInstTable;
+    AllocSizeTable allocSizeTable;
     AssignConstInstTable assignConstInstTable;
     AssignVariableInstTable assignVariableInstTable;
     AssignCastInstTable assignCastInstTable;
@@ -102,6 +103,7 @@ class DatabaseWriter
         exitMonitorInstTable = new ExitMonitorInstTable(connection);
         returnInstTable = new ReturnInstTable(connection);
         assignAllocInstTable = new AssignAllocInstTable(connection);
+        allocSizeTable = new AllocSizeTable(connection);
         assignConstInstTable = new AssignConstInstTable(connection);
         assignVariableInstTable = new AssignVariableInstTable(connection);
         assignCastInstTable = new AssignCastInstTable(connection);
@@ -312,6 +314,11 @@ class DatabaseWriter
         assignAllocInstTable.insert(id, lhs, rhs, mid);
     }
 
+    void writeAllocSize(int sizeId, int index, int instId) throws SQLException
+    {
+        allocSizeTable.insert(sizeId, index, instId);
+    }
+
     void writeLoadInstanceFieldInstruction(int id, int lhs, int rhs, int field, int mid) throws SQLException
     {
         instructionTable.insert(id, InstructionKind.LOAD_INSTANCE);
@@ -336,16 +343,16 @@ class DatabaseWriter
         storeStaticFieldInstTable.insert(id, field, rhs, mid);
     }
 
-    void writeLoadArrayInstruction(int id, int lhs, int rhs, int mid) throws SQLException
+    void writeLoadArrayInstruction(int id, int lhs, int rhs, int arrayIdx, int mid) throws SQLException
     {
         instructionTable.insert(id, InstructionKind.LOAD_ARRAY);
-        loadArrayInstTable.insert(id, lhs, rhs, mid);
+        loadArrayInstTable.insert(id, lhs, rhs, arrayIdx, mid);
     }
 
-    void writeStoreArrayInstruction(int id, int lhs, int rhs, int mid) throws SQLException
+    void writeStoreArrayInstruction(int id, int lhs, int arrayIdx, int rhs, int mid) throws SQLException
     {
         instructionTable.insert(id, InstructionKind.STORE_ARRAY);
-        storeArrayInstTable.insert(id, lhs, rhs, mid);
+        storeArrayInstTable.insert(id, lhs, arrayIdx, rhs, mid);
     }
 
     void writeUnaryOpInstruction(int id, UnOpKind kind, int lhs, int rhs, int mid) throws SQLException

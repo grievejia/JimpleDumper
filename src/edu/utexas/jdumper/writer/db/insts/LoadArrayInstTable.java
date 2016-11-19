@@ -19,19 +19,21 @@ public class LoadArrayInstTable
                                     "id INTEGER PRIMARY KEY, " +
                                     "lhs INTEGER NOT NULL, " +
                                     "rhs INTEGER NOT NULL, " +
+                                    "arrayidx INTEGER NOT NULL, " +
                                     "method INTEGER NOT NULL " +
                                     ")").executeUpdate();
         insertStmt = connection.prepareStatement("INSERT INTO " +
                                                  TABLE_NAME +
-                                                 " VALUES(?, ?, ?, ?)");
+                                                 " VALUES(?, ?, ?, ?, ?)");
     }
 
-    public void insert(int id, int lhs, int rhs, int mid) throws SQLException
+    public void insert(int id, int lhs, int rhs, int arrayIdx, int mid) throws SQLException
     {
         insertStmt.setInt(1, id);
         insertStmt.setInt(2, lhs);
         insertStmt.setInt(3, rhs);
-        insertStmt.setInt(4, mid);
+        insertStmt.setInt(4, arrayIdx);
+        insertStmt.setInt(5, mid);
         insertStmt.executeUpdate();
     }
 }
