@@ -33,6 +33,7 @@ class DatabaseWriter
     FieldTable fieldTable;
     MethodTable methodTable;
     MethodParamTable methodParamTable;
+    MethodThisParamTable methodThisParamTable;
     MethodReturnTable methodReturnTable;
     ExceptionDeclTable exceptionDeclTable;
     VariableTable variableTable;
@@ -91,6 +92,7 @@ class DatabaseWriter
         fieldTable = new FieldTable(connection);
         methodTable = new MethodTable(connection);
         methodParamTable = new MethodParamTable(connection);
+        methodThisParamTable = new MethodThisParamTable(connection);
         methodReturnTable = new MethodReturnTable(connection);
         exceptionDeclTable = new ExceptionDeclTable(connection);
         variableTable = new VariableTable(connection);
@@ -179,6 +181,11 @@ class DatabaseWriter
     void writeMethodParam(int mid, int index, int vid) throws SQLException
     {
         methodParamTable.insert(mid, index, vid);
+    }
+
+    void writeMethodThisParam(int mid, int vid) throws SQLException
+    {
+        methodThisParamTable.insert(mid, vid);
     }
 
     void writeMethodReturnType(int mid, int tid) throws SQLException

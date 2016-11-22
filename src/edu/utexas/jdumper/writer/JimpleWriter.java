@@ -996,6 +996,7 @@ public final class JimpleWriter
                 SootVariable var = new ThisVariable(method);
                 int vid = varMap.getIndex(var);
                 dbWriter.writeVariable(vid, var.getName(), parentId, mid);
+                dbWriter.writeMethodThisParam(mid, vid);
             }
 
             for(int i = 0 ; i < method.getParameterCount(); i++)
@@ -1023,7 +1024,11 @@ public final class JimpleWriter
                 if (!method.hasActiveBody())
                     method.retrieveActiveBody();
 
+                // Transform to SSA
                 Body body = method.getActiveBody();
+                body = Shimple.v().newBody(body);
+                method.setActiveBody(body);
+
                 writeBody(mid, body);
                 method.releaseActiveBody();
             }
