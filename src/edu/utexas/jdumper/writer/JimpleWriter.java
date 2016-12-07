@@ -358,12 +358,21 @@ public final class JimpleWriter
         else if (rhs instanceof NegExpr || rhs instanceof LengthExpr || rhs instanceof InstanceOfExpr)
         {
             Value op = null;
-            if (rhs instanceof NegExpr)
+            UnOpKind kind;
+            if (rhs instanceof NegExpr) {
+                kind = UnOpKind.NEG;
                 op = ((NegExpr) rhs).getOp();
-            else if (rhs instanceof LengthExpr)
+            }
+            else if (rhs instanceof LengthExpr) {
+                kind = UnOpKind.LENGTH;
                 op = ((LengthExpr) rhs).getOp();
-            else if (rhs instanceof InstanceOfExpr)
+            }
+            else if (rhs instanceof InstanceOfExpr) {
+                kind = UnOpKind.INSTANCEOF;
                 op = ((InstanceOfExpr) rhs).getOp();
+            } else {
+                throw new RuntimeException("Not an unary exp: " + rhs);
+            }
 
             int opId;
             if (op instanceof Local)
@@ -385,7 +394,7 @@ public final class JimpleWriter
             else
                 throw new RuntimeException("Unsupported operand: " + op);
 
-            dbWriter.writeUnaryOpInstruction(id, UnOpKind.NEG, lhsId, opId, mid);
+            dbWriter.writeUnaryOpInstruction(id, kind, lhsId, opId, mid);
         }
         else if (rhs instanceof PhiExpr)
         {
@@ -974,7 +983,7 @@ public final class JimpleWriter
         writeTraps(mid, body);
     }
 
-    private void writeMethods(SootClass cl) throws SQLException
+    private void writeMethods(SootClass cl, boolean ssa) throws SQLException
     {
         for (SootMethod method: cl.getMethods())
         {
@@ -1015,7 +1024,7 @@ public final class JimpleWriter
                 dbWriter.writeExceptionDeclaration(mid, eid);
             }
 
-            if (!method.isAbstract() && !method.isNative())
+            if (!method.isAbstract() && !method.isNative() && !method.isPhantom())
             {
                 if (method.getName() == "getAnnotation") {
                     System.out.println();
@@ -1026,8 +1035,10 @@ public final class JimpleWriter
 
                 // Transform to SSA
                 Body body = method.getActiveBody();
-                body = Shimple.v().newBody(body);
-                method.setActiveBody(body);
+                if (ssa) {
+                    body = Shimple.v().newBody(body);
+                    method.setActiveBody(body);
+                }
 
                 writeBody(mid, body);
                 method.releaseActiveBody();
@@ -1061,7 +1072,7 @@ public final class JimpleWriter
         }
     }
 
-    private void writeClasses(List<SootClass> classes) throws SQLException
+    private void writeClasses(List<SootClass> classes, boolean ssa) throws SQLException
     {
         writeNullType();
         writePrimitiveTypes();
@@ -1070,10 +1081,10 @@ public final class JimpleWriter
         for (SootClass cl: classes)
             writeFields(cl);
         for (SootClass cl: classes)
-            writeMethods(cl);
+            writeMethods(cl, ssa);
     }
 
-    public static void writeJimple(String outfile, List<SootClass> classes)
+    public static void writeJimple(String outfile, List<SootClass> classes, boolean ssa)
     {
         Connection connection = null;
         try
@@ -1086,7 +1097,7 @@ public final class JimpleWriter
             System.out.println("[JimpleDumper] Database connection established");
 
             long startTime = System.currentTimeMillis();
-            writer.writeClasses(classes);
+            writer.writeClasses(classes, ssa);
             connection.commit();
 
             double elapsedTime = (System.currentTimeMillis() - startTime) / 1000;

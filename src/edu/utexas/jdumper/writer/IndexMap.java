@@ -28,7 +28,7 @@ class IndexMap<Elem>
     {
         Integer ret = indexMap.get(elem);
         if (ret == null)
-            throw new RuntimeException("Element lookup failed in IndexMap");
+            throw new RuntimeException("Element lookup failed in IndexMap: " + elem);
         return ret;
     }
 

@@ -22,18 +22,18 @@ public class SootLoader
         }
     }
 
-    public static List<SootClass> loadSootClasses(List<String> appJarList, List<String> libJarList)
+    public static List<SootClass> loadSootClasses(List<String> appJarList, List<String> libJarList, boolean allowPhantom)
     {
         NoSearchingClassProvider provider = setNoSearchingClassProvider(appJarList, libJarList);
-        return loadClasses(provider);
+        return loadClasses(provider, allowPhantom);
     }
 
-    private static List<SootClass> loadClasses(NoSearchingClassProvider provider)
+    private static List<SootClass> loadClasses(NoSearchingClassProvider provider, boolean allowPhantom)
     {
         // Force resolving all classes
         Options.v().set_full_resolver(true);
         // Do NOT allow any phantom classes
-        Options.v().set_allow_phantom_refs(false);
+        Options.v().set_allow_phantom_refs(allowPhantom);
         // Keep line number information
         Options.v().set_keep_line_number(true);
         Options.v().set_whole_program(true);

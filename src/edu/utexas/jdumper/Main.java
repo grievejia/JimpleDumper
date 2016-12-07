@@ -18,8 +18,10 @@ public class Main {
 
         List<String> appJarList = getApplicationJarList(cmd);
         List<String> libJarList = getLibraryJarList(cmd);
-        List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList);
-        JimpleWriter.writeJimple(outfile, classes);
+        boolean toSSA = cmd.hasOption("ssa");
+        boolean allowPhantom = cmd.hasOption("allow-phantom");
+        List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList, allowPhantom);
+        JimpleWriter.writeJimple(outfile, classes, toSSA);
     }
 
     private static String getOutputFileName(CommandLine cmd)
@@ -62,6 +64,14 @@ public class Main {
                 .longOpt("output")
                 .hasArg()
                 .build();
+        Option allowPhantom = Option.builder("p")
+                .desc("Allow phantom class references")
+                .longOpt("allow-phantom")
+                .build();
+        Option ssa = Option.builder("s")
+                .desc("transform the IR into SSA form before dumping")
+                .longOpt("ssa")
+                .build();
         Option help = Option.builder("h")
                 .desc("Display help message")
                 .longOpt("help")
@@ -69,6 +79,8 @@ public class Main {
 
         options.addOption(sysJars);
         options.addOption(out);
+        options.addOption(ssa);
+        options.addOption(allowPhantom);
         options.addOption(help);
 
         CommandLineParser parser = new DefaultParser();
