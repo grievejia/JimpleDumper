@@ -590,7 +590,7 @@ public final class JimpleWriter
         else
             throw new RuntimeException("Unsupported invoke expr: " + expr);
 
-        int targetId = methodMap.getIndex(expr.getMethod());
+        int targetId = methodMap.getIndexOrFail(expr.getMethod());
 
         dbWriter.writeInvokeInstruction(id, kind, targetId, baseId, lineno, retId, mid);
     }
@@ -983,8 +983,7 @@ public final class JimpleWriter
         writeTraps(mid, body);
     }
 
-    private void writeMethods(SootClass cl, boolean ssa) throws SQLException
-    {
+    private void writeMethodDecls(SootClass cl) throws SQLException {
         for (SootMethod method: cl.getMethods())
         {
             int mid = methodMap.getIndex(method);
@@ -1023,12 +1022,16 @@ public final class JimpleWriter
                 int eid = typeMap.getIndexOrFail(exceptClass.getType());
                 dbWriter.writeExceptionDeclaration(mid, eid);
             }
+        }
+    }
 
+    private void writeMethodBodys(SootClass cl, boolean ssa) throws SQLException
+    {
+        for (SootMethod method: cl.getMethods())
+        {
+            int mid = methodMap.getIndexOrFail(method);
             if (!method.isAbstract() && !method.isNative() && !method.isPhantom())
             {
-                if (method.getName() == "getAnnotation") {
-                    System.out.println();
-                }
                 // This is an EXTREMELY slow operation
                 if (!method.hasActiveBody())
                     method.retrieveActiveBody();
@@ -1080,8 +1083,12 @@ public final class JimpleWriter
             writeClass(cl);
         for (SootClass cl: classes)
             writeFields(cl);
-        for (SootClass cl: classes)
-            writeMethods(cl, ssa);
+        for (SootClass cl: classes) {
+            writeMethodDecls(cl);
+        }
+        for (SootClass cl: classes) {
+            writeMethodBodys(cl, ssa);
+        }
     }
 
     public static void writeJimple(String outfile, List<SootClass> classes, boolean ssa)
