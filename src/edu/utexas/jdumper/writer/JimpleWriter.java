@@ -126,17 +126,19 @@ public final class JimpleWriter
         dbWriter.writePrimitiveType(typeMap.getIndex(soot.DoubleType.v()), "double");
     }
 
+    private void writeField(SootField field) throws SQLException {
+        int fid = fieldMap.getIndex(field);
+        String name = field.getName();
+        int tid = getTypeId(field.getType());
+        int parentId = getTypeId(field.getDeclaringClass().getType());
+        int modifier = field.getModifiers();
+        dbWriter.writeField(fid, name, tid, parentId, modifier);
+    }
+
     private void writeFields(SootClass cl) throws SQLException
     {
         for (SootField field: cl.getFields())
-        {
-            int fid = fieldMap.getIndex(field);
-            String name = field.getName();
-            int tid = getTypeId(field.getType());
-            int parentId = getTypeId(cl.getType());
-            int modifier = field.getModifiers();
-            dbWriter.writeField(fid, name, tid, parentId, modifier);
-        }
+            writeField(field);
     }
 
     private int writeLocal(int mid, Local local) throws SQLException
@@ -269,14 +271,26 @@ public final class JimpleWriter
         {
             InstanceFieldRef iFieldRef = (InstanceFieldRef) rhs;
             Local local = (Local) iFieldRef.getBase();
+
+            SootField field = iFieldRef.getField();
+            if (!fieldMap.exist(field)) {
+                System.err.println("[JimpleDumper] Warning: Cannot find instance field " + field.getSignature());
+                writeField(field);
+            }
             int fieldId = fieldMap.getIndexOrFail(iFieldRef.getField());
+
             int rhsId = varMap.getIndex(new LocalVariable(local));
             dbWriter.writeLoadInstanceFieldInstruction(id, lhsId, rhsId, fieldId, mid);
         }
         else if (rhs instanceof StaticFieldRef)
         {
             StaticFieldRef sFieldRef = (StaticFieldRef) rhs;
-            int fieldId = fieldMap.getIndexOrFail(sFieldRef.getField());
+            SootField field = sFieldRef.getField();
+            if (!fieldMap.exist(field)) {
+                System.err.println("[JimpleDumper] Warning: Cannot find static field " + field.getSignature());
+                writeField(field);
+            }
+            int fieldId = fieldMap.getIndexOrFail(field);
             dbWriter.writeLoadStaticFieldInstruction(id, lhsId, fieldId, mid);
         }
         else if (rhs instanceof ArrayRef)
@@ -451,14 +465,24 @@ public final class JimpleWriter
         {
             InstanceFieldRef iFieldRef = (InstanceFieldRef) lhs;
             Local base = (Local) iFieldRef.getBase();
-            int fieldId = fieldMap.getIndexOrFail(iFieldRef.getField());
+            SootField field = iFieldRef.getField();
+            if (!fieldMap.exist(field)) {
+                System.err.println("[JimpleDumper] Warning: Cannot find instance field " + field.getSignature());
+                writeField(field);
+            }
+            int fieldId = fieldMap.getIndexOrFail(field);
             int baseId = varMap.getIndex(new LocalVariable(base));
             dbWriter.writeStoreInstanceFieldInstruction(id, baseId, fieldId, rhsId, mid);
         }
         else if (lhs instanceof StaticFieldRef)
         {
             StaticFieldRef sFieldRef = (StaticFieldRef) lhs;
-            int fieldId = fieldMap.getIndexOrFail(sFieldRef.getField());
+            SootField field = sFieldRef.getField();
+            if (!fieldMap.exist(field)) {
+                System.err.println("[JimpleDumper] Warning: Cannot find static field " + field.getSignature());
+                writeField(field);
+            }
+            int fieldId = fieldMap.getIndexOrFail(field);
             dbWriter.writeStoreStaticFieldInstruction(id, fieldId, rhsId, mid);
         }
         else if (lhs instanceof ArrayRef)
@@ -590,7 +614,12 @@ public final class JimpleWriter
         else
             throw new RuntimeException("Unsupported invoke expr: " + expr);
 
-        int targetId = methodMap.getIndexOrFail(expr.getMethod());
+        SootMethod targetMethod = expr.getMethod();
+        if (!methodMap.exist(targetMethod)) {
+            System.err.println("[JimpleDumper] Warning: cannot find the implementation of method  " + targetMethod);
+            writeMethodDecl(targetMethod);
+        }
+        int targetId = methodMap.getIndexOrFail(targetMethod);
 
         dbWriter.writeInvokeInstruction(id, kind, targetId, baseId, lineno, retId, mid);
     }
@@ -983,51 +1012,55 @@ public final class JimpleWriter
         writeTraps(mid, body);
     }
 
+    private void writeMethodDecl(SootMethod method) throws SQLException {
+        int mid = methodMap.getIndex(method);
+        String name = method.getName();
+        String sig = method.getSignature();
+        int parentId = getTypeId(method.getDeclaringClass().getType());
+        int modifier = method.getModifiers();
+        dbWriter.writeMethod(mid, name, sig, parentId, modifier);
+
+        if (!(method.getReturnType() instanceof VoidType))
+        {
+            int tid = getTypeId(method.getReturnType());
+            dbWriter.writeMethodReturnType(mid, tid);
+        }
+
+        if (!method.isStatic())
+        {
+            SootVariable var = new ThisVariable(method);
+            int vid = varMap.getIndex(var);
+            dbWriter.writeVariable(vid, var.getName(), parentId, mid);
+            dbWriter.writeMethodThisParam(mid, vid);
+        }
+
+        for(int i = 0 ; i < method.getParameterCount(); i++)
+        {
+            SootVariable var = new ParamVariable(method, i);
+            int vid = varMap.getIndex(var);
+            int tid = getTypeId(method.getParameterType(i));
+            dbWriter.writeMethodParam(mid, i, vid);
+            dbWriter.writeVariable(vid, var.getName(), tid, mid);
+        }
+
+        for (SootClass exceptClass: method.getExceptions())
+        {
+            assert(!exceptClass.isInterface());
+            int eid = typeMap.getIndexOrFail(exceptClass.getType());
+            dbWriter.writeExceptionDeclaration(mid, eid);
+        }
+    }
+
     private void writeMethodDecls(SootClass cl) throws SQLException {
         for (SootMethod method: cl.getMethods())
-        {
-            int mid = methodMap.getIndex(method);
-            String name = method.getName();
-            String sig = method.getSignature();
-            int parentId = getTypeId(cl.getType());
-            int modifier = method.getModifiers();
-            dbWriter.writeMethod(mid, name, sig, parentId, modifier);
-
-            if (!(method.getReturnType() instanceof VoidType))
-            {
-                int tid = getTypeId(method.getReturnType());
-                dbWriter.writeMethodReturnType(mid, tid);
-            }
-
-            if (!method.isStatic())
-            {
-                SootVariable var = new ThisVariable(method);
-                int vid = varMap.getIndex(var);
-                dbWriter.writeVariable(vid, var.getName(), parentId, mid);
-                dbWriter.writeMethodThisParam(mid, vid);
-            }
-
-            for(int i = 0 ; i < method.getParameterCount(); i++)
-            {
-                SootVariable var = new ParamVariable(method, i);
-                int vid = varMap.getIndex(var);
-                int tid = getTypeId(method.getParameterType(i));
-                dbWriter.writeMethodParam(mid, i, vid);
-                dbWriter.writeVariable(vid, var.getName(), tid, mid);
-            }
-
-            for (SootClass exceptClass: method.getExceptions())
-            {
-                assert(!exceptClass.isInterface());
-                int eid = typeMap.getIndexOrFail(exceptClass.getType());
-                dbWriter.writeExceptionDeclaration(mid, eid);
-            }
-        }
+            writeMethodDecl(method);
     }
 
     private void writeMethodBodys(SootClass cl, boolean ssa) throws SQLException
     {
-        for (SootMethod method: cl.getMethods())
+        ArrayList<SootMethod> methods = new ArrayList<>();
+        methods.addAll(cl.getMethods());
+        for (SootMethod method: methods)
         {
             int mid = methodMap.getIndexOrFail(method);
             if (!method.isAbstract() && !method.isNative() && !method.isPhantom())

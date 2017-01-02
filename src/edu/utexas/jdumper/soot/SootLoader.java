@@ -72,15 +72,21 @@ public class SootLoader
             System.exit(-1);
         }
 
+        // FileSystem implementation support
         addBasicClass(provider, "java.io.UnixFileSystem");
+
+        // Server application support
         addBasicClass(provider, "sun.net.www.protocol.file.Handler");
-        addBasicClass(provider, "sun.net.www.protocol.ftp.Handler");
         addBasicClass(provider, "sun.net.www.protocol.http.Handler");
-        addBasicClass(provider, "sun.net.www.protocol.https.Handler");
         addBasicClass(provider, "sun.net.www.protocol.jar.Handler");
-        addBasicClass(provider, "sun.net.www.protocol.ftp.FtpURLConnection");
         addBasicClass(provider, "sun.net.www.protocol.http.HttpURLConnection");
-        addBasicClass(provider, "sun.net.www.protocol.https.HttpsURLConnection");
+//        addBasicClass(provider, "sun.net.www.protocol.ftp.Handler");
+//        addBasicClass(provider, "sun.net.www.protocol.https.Handler");
+//        addBasicClass(provider, "sun.net.www.protocol.ftp.FtpURLConnection");
+//        addBasicClass(provider, "sun.net.www.protocol.https.HttpsURLConnection");
+
+        // Javacard SDK support
+        addBasicClass(provider, "javacard.framework.JCSystem");
 
         soot.SourceLocator.v().setClassProviders(Collections.<ClassProvider>singletonList(provider));
         return provider;
