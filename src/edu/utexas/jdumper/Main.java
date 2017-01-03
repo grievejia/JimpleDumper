@@ -7,6 +7,7 @@ import soot.SootClass;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Main {
@@ -31,7 +32,9 @@ public class Main {
 
     private static List<String> getLibraryJarList(CommandLine cmd)
     {
-       return filterJar(Arrays.asList(cmd.getOptionValue("l").split(":")));
+        String libPath = cmd.getOptionValue("l");
+        List<String> libList = libPath == null ? Collections.emptyList() : Arrays.asList(libPath.split(":"));
+        return filterJar(libList);
     }
 
     private static List<String> getApplicationJarList(CommandLine cmd)
