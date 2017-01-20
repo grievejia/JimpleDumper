@@ -58,13 +58,23 @@ public class SootLoader
         {
             for (String app: appJarList)
             {
-                provider.addArchive(new File(app));
-                System.out.println("[JimpleDumper] Application jar added: " + app);
+                if (app.endsWith(".jar") || app.endsWith(".zip")) {
+                    provider.addArchive(new File(app));
+                    System.out.println("[JimpleDumper] Application archive added: " + app);
+                }
+                else if (app.endsWith(".class")) {
+                    provider.addClass(new File(app));
+                    System.out.println("[JimpleDumper] Application class added: " + app);
+                }
             }
             for (String lib: libJarList)
             {
-                provider.addArchiveForResolving(new File(lib));
-                System.out.println("[JimpleDumper] Library jar added: " + lib);
+                if (lib.endsWith(".jar") || lib.endsWith(".zip")) {
+                    provider.addArchiveForResolving(new File(lib));
+                    System.out.println("[JimpleDumper] Library archive added: " + lib);
+                } else {
+                    System.err.println("[JimpleDumper] Library file not added (failed to recognize the format): " + lib);
+                }
             }
         } catch (IOException e)
         {

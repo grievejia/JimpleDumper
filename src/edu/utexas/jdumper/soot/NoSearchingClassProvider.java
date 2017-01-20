@@ -184,6 +184,7 @@ public class NoSearchingClassProvider implements ClassProvider
         }
     }
 
+
     /**
      * A resource is something to which we can open an InputStream 1 or
      * more times.

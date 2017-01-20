@@ -34,23 +34,12 @@ public class Main {
     {
         String libPath = cmd.getOptionValue("l");
         List<String> libList = libPath == null ? Collections.emptyList() : Arrays.asList(libPath.split(":"));
-        return filterJar(libList);
+        return libList;
     }
 
     private static List<String> getApplicationJarList(CommandLine cmd)
     {
-        return filterJar(cmd.getArgList());
-    }
-
-    private static List<String> filterJar(List<String> list)
-    {
-        List<String> ret = new ArrayList<>();
-        for (String str: list)
-        {
-            if (str.endsWith(".jar") || str.endsWith(".zip"))
-                ret.add(str);
-        }
-        return ret;
+        return cmd.getArgList();
     }
 
     private static CommandLine parseCommandLine(String[] args)
