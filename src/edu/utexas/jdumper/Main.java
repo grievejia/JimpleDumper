@@ -5,7 +5,6 @@ import edu.utexas.jdumper.writer.JimpleWriter;
 import org.apache.commons.cli.*;
 import soot.SootClass;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -19,10 +18,8 @@ public class Main {
 
         List<String> appJarList = getApplicationJarList(cmd);
         List<String> libJarList = getLibraryJarList(cmd);
-        boolean toSSA = cmd.hasOption("ssa");
-        boolean allowPhantom = cmd.hasOption("allow-phantom");
-        List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList, allowPhantom);
-        JimpleWriter.writeJimple(outfile, classes, toSSA);
+        List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList, cmd);
+        JimpleWriter.writeJimple(outfile, classes, cmd.hasOption("ssa"));
     }
 
     private static String getOutputFileName(CommandLine cmd)

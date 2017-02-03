@@ -6,6 +6,7 @@ import soot.jimple.*;
 import soot.jimple.internal.JimpleLocal;
 import soot.shimple.PhiExpr;
 import soot.shimple.Shimple;
+import soot.shimple.ShimpleBody;
 import soot.tagkit.LineNumberTag;
 
 import java.sql.*;
@@ -413,8 +414,8 @@ public final class JimpleWriter
         else if (rhs instanceof PhiExpr)
         {
             PhiExpr rhsPhi = (PhiExpr) rhs;
-            // ShimpleBody sometimes gives me phiexpr with duplicated rhs.
-            // This is annoying, but we have to deal with it.
+            // ShimpleBody sometimes gives me phiexpr with duplicated rhs. This may happen when one value gets through multiple paths.
+            // For now, we remove the duplicates. But a long-term solution should be to have AuditrNative properly support PHI nodes with path info.
             Set<Integer> rhsIds = new TreeSet<>();
             for (Value rhsVal: rhsPhi.getValues())
             {
@@ -424,6 +425,16 @@ public final class JimpleWriter
                     int rhsId = varMap.getIndex(new LocalVariable(rhsLocal));
                     rhsIds.add(rhsId);
                 }
+                // Fabricating AssignConst for PHI nodes is trickier than usual. We'd like to avoid it as much as possible
+//                else if (rhsVal instanceof Constant) {
+//                    Constant c = (Constant) rhsVal;
+//                    int cid = getConstantId(c);
+//                    Local l = new JimpleLocal("const" + id, c.getType());
+//                    int rhsId = writeLocal(mid, l);
+//                    rhsIds.add(rhsId);
+//                    dbWriter.writeAssignConstInstruction(id, rhsId, cid, mid);
+//                    id = stmtMap.getNextIndex();
+//                }
                 else
                     throw new RuntimeException("Unsupported PHI rhs: " + rhsVal);
             }
@@ -1071,9 +1082,18 @@ public final class JimpleWriter
 
                 // Transform to SSA
                 Body body = method.getActiveBody();
+                PackManager.v().getPack("jop").apply(body);
                 if (ssa) {
-                    body = Shimple.v().newBody(body);
-                    method.setActiveBody(body);
+                    ShimpleBody sBody = Shimple.v().newBody(body);
+                    PackManager.v().getPack("sop").apply(sBody);
+
+                    // sop.cpf will leave out dead variables. Do another round of jop to clean them up
+                    Body tmpBody = sBody.toJimpleBody();
+                    PackManager.v().getPack("jop").apply(tmpBody);
+                    sBody = Shimple.v().newBody(tmpBody);
+
+                    method.setActiveBody(sBody);
+                    body = sBody;
                 }
 
                 writeBody(mid, body);

@@ -1,8 +1,7 @@
 package edu.utexas.jdumper.soot;
 
-import soot.ClassProvider;
-import soot.Scene;
-import soot.SootClass;
+import org.apache.commons.cli.CommandLine;
+import soot.*;
 import soot.options.Options;
 
 import java.io.File;
@@ -22,29 +21,46 @@ public class SootLoader
         }
     }
 
-    public static List<SootClass> loadSootClasses(List<String> appJarList, List<String> libJarList, boolean allowPhantom)
+    public static List<SootClass> loadSootClasses(List<String> appJarList, List<String> libJarList, CommandLine cmd)
     {
         NoSearchingClassProvider provider = setNoSearchingClassProvider(appJarList, libJarList);
-        return loadClasses(provider, allowPhantom);
+        return loadClasses(provider, cmd);
     }
 
-    private static List<SootClass> loadClasses(NoSearchingClassProvider provider, boolean allowPhantom)
+    private static List<SootClass> loadClasses(NoSearchingClassProvider provider, CommandLine cmd)
     {
         // Force resolving all classes
         Options.v().set_full_resolver(true);
-        // Do NOT allow any phantom classes
-        Options.v().set_allow_phantom_refs(allowPhantom);
         // Keep line number information
         Options.v().set_keep_line_number(true);
-        Options.v().set_whole_program(true);
+        // Set if we want to tolerate phantom types
+        Options.v().set_allow_phantom_refs(cmd.hasOption("allow-phantom"));
+        // Turn on optimizations to produce better-looking ir
+        PhaseOptions.v().setPhaseOption("jop", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.cse", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.lcm", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.cp", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.cpf", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.cbf", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.dae", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.nce", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.uce1", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.ubf1", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.uce2", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.ubf2", "enabled");
+        PhaseOptions.v().setPhaseOption("jop.ule", "enabled");
+        if (cmd.hasOption("ssa")) {
+            Options.v().set_output_format(Options.output_format_shimple);
+            PhaseOptions.v().setPhaseOption("sop", "enabled");
+            PhaseOptions.v().setPhaseOption("sop.cpf", "enabled");
+        }
 
         System.out.println("[JimpleDumper] Loading classes using Soot...");
         Scene scene = Scene.v();
         for (String className: provider.getClassNames())
-        {
             scene.loadClass(className, SootClass.SIGNATURES);
+        for (String className: provider.getClassNames())
             scene.loadClass(className, SootClass.BODIES);
-        }
         scene.loadNecessaryClasses();
 
         System.out.println("[JimpleDumper] All classes loaded");
