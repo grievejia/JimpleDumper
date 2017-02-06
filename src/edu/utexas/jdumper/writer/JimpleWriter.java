@@ -1,6 +1,7 @@
 package edu.utexas.jdumper.writer;
 
 import edu.utexas.jdumper.soot.*;
+import edu.utexas.jdumper.soot.transform.ReturnValueMerger;
 import soot.*;
 import soot.jimple.*;
 import soot.jimple.internal.JimpleLocal;
@@ -1082,7 +1083,9 @@ public final class JimpleWriter
 
                 // Transform to SSA
                 Body body = method.getActiveBody();
+                ReturnValueMerger.run(body);
                 PackManager.v().getPack("jop").apply(body);
+
                 if (ssa) {
                     ShimpleBody sBody = Shimple.v().newBody(body);
                     PackManager.v().getPack("sop").apply(sBody);
