@@ -61,6 +61,10 @@ public class Main {
                 .desc("transform the IR into SSA form before dumping")
                 .longOpt("ssa")
                 .build();
+        Option noOpt = Option.builder("n")
+                .desc("disable Soot optimization passes (turn this on when it takes forever to dump the program")
+                .longOpt("no-opt")
+                .build();
         Option help = Option.builder("h")
                 .desc("Display help message")
                 .longOpt("help")
@@ -70,6 +74,7 @@ public class Main {
         options.addOption(out);
         options.addOption(ssa);
         options.addOption(allowPhantom);
+        options.addOption(noOpt);
         options.addOption(help);
 
         CommandLineParser parser = new DefaultParser();
