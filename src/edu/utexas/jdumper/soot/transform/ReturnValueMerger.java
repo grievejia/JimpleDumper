@@ -5,7 +5,6 @@ import soot.Local;
 import soot.Unit;
 import soot.jimple.Jimple;
 import soot.jimple.ReturnStmt;
-import soot.jimple.ReturnVoidStmt;
 import soot.jimple.Stmt;
 import soot.util.Chain;
 

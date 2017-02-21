@@ -2,6 +2,7 @@ package edu.utexas.jdumper.writer;
 
 import edu.utexas.jdumper.soot.*;
 import edu.utexas.jdumper.soot.transform.ReturnValueMerger;
+import org.apache.commons.cli.CommandLine;
 import soot.*;
 import soot.jimple.*;
 import soot.jimple.internal.JimpleLocal;
@@ -1068,7 +1069,7 @@ public final class JimpleWriter
             writeMethodDecl(method);
     }
 
-    private void writeMethodBodys(SootClass cl, boolean ssa) throws SQLException
+    private void writeMethodBodys(SootClass cl, CommandLine cmd) throws SQLException
     {
         ArrayList<SootMethod> methods = new ArrayList<>();
         methods.addAll(cl.getMethods());
@@ -1086,14 +1087,16 @@ public final class JimpleWriter
                 ReturnValueMerger.run(body);
                 PackManager.v().getPack("jop").apply(body);
 
-                if (ssa) {
+                if (cmd.hasOption("ssa")) {
                     ShimpleBody sBody = Shimple.v().newBody(body);
-                    PackManager.v().getPack("sop").apply(sBody);
 
                     // sop.cpf will leave out dead variables. Do another round of jop to clean them up
-                    Body tmpBody = sBody.toJimpleBody();
-                    PackManager.v().getPack("jop").apply(tmpBody);
-                    sBody = Shimple.v().newBody(tmpBody);
+                    if (!cmd.hasOption("disable-ssa-opt")) {
+                        PackManager.v().getPack("sop").apply(sBody);
+                        Body tmpBody = sBody.toJimpleBody();
+                        PackManager.v().getPack("jop").apply(tmpBody);
+                        sBody = Shimple.v().newBody(tmpBody);
+                    }
 
                     method.setActiveBody(sBody);
                     body = sBody;
@@ -1131,7 +1134,7 @@ public final class JimpleWriter
         }
     }
 
-    private void writeClasses(List<SootClass> classes, boolean ssa) throws SQLException
+    private void writeClasses(List<SootClass> classes, CommandLine cmd) throws SQLException
     {
         writeNullType();
         writePrimitiveTypes();
@@ -1143,11 +1146,11 @@ public final class JimpleWriter
             writeMethodDecls(cl);
         }
         for (SootClass cl: classes) {
-            writeMethodBodys(cl, ssa);
+            writeMethodBodys(cl, cmd);
         }
     }
 
-    public static void writeJimple(String outfile, List<SootClass> classes, boolean ssa)
+    public static void writeJimple(String outfile, List<SootClass> classes, CommandLine cmd)
     {
         Connection connection = null;
         try
@@ -1160,7 +1163,7 @@ public final class JimpleWriter
             System.out.println("[JimpleDumper] Database connection established");
 
             long startTime = System.currentTimeMillis();
-            writer.writeClasses(classes, ssa);
+            writer.writeClasses(classes, cmd);
             connection.commit();
 
             double elapsedTime = (System.currentTimeMillis() - startTime) / 1000;

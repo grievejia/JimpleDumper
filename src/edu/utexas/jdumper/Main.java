@@ -19,7 +19,7 @@ public class Main {
         List<String> appJarList = getApplicationJarList(cmd);
         List<String> libJarList = getLibraryJarList(cmd);
         List<SootClass> classes = SootLoader.loadSootClasses(appJarList, libJarList, cmd);
-        JimpleWriter.writeJimple(outfile, classes, cmd.hasOption("ssa"));
+        JimpleWriter.writeJimple(outfile, classes, cmd);
     }
 
     private static String getOutputFileName(CommandLine cmd)
@@ -61,6 +61,10 @@ public class Main {
                 .desc("transform the IR into SSA form before dumping")
                 .longOpt("ssa")
                 .build();
+        Option noSSAOpt = Option.builder("d")
+                .desc("disable some of the SSA optimization. Use it in case Soot crashes")
+                .longOpt("disable-ssa-opt")
+                .build();
         Option help = Option.builder("h")
                 .desc("Display help message")
                 .longOpt("help")
@@ -69,6 +73,7 @@ public class Main {
         options.addOption(sysJars);
         options.addOption(out);
         options.addOption(ssa);
+        options.addOption(noSSAOpt);
         options.addOption(allowPhantom);
         options.addOption(help);
 
