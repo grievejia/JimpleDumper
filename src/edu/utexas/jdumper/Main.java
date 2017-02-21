@@ -54,23 +54,23 @@ public class Main {
                 .hasArg()
                 .build();
         Option allowPhantom = Option.builder("p")
-                .desc("Allow phantom class references")
+                .desc("allow phantom class references")
                 .longOpt("allow-phantom")
                 .build();
         Option ssa = Option.builder("s")
                 .desc("transform the IR into SSA form before dumping")
                 .longOpt("ssa")
                 .build();
-        Option noSSAOpt = Option.builder("d")
-                .desc("disable some of the SSA optimization. Use it in case Soot crashes")
-                .longOpt("disable-ssa-opt")
-                .build();
         Option noOpt = Option.builder("n")
-                .desc("disable Soot optimization passes (turn this on when it takes forever to dump the program")
+                .desc("disable Soot optimization passes. Turn it on when it takes forever to dump the program")
                 .longOpt("no-opt")
                 .build();
+        Option noSSAOpt = Option.builder("d")
+                .desc("disable some of the SSA optimization. Turn it when Soot crashes")
+                .longOpt("disable-ssa-opt")
+                .build();
         Option help = Option.builder("h")
-                .desc("Display help message")
+                .desc("display help message")
                 .longOpt("help")
                 .build();
 
