@@ -36,7 +36,11 @@ public class SootLoader
         // Set if we want to tolerate phantom types
         Options.v().set_allow_phantom_refs(cmd.hasOption("allow-phantom"));
         // Turn on optimizations to produce better-looking ir
-        PhaseOptions.v().setPhaseOption("jop", "enabled");
+
+        boolean enableOpt = !cmd.hasOption("no-opt");
+        if (enableOpt) {
+            PhaseOptions.v().setPhaseOption("jop", "enabled");
+        }
         PhaseOptions.v().setPhaseOption("jop.cse", "enabled");
         PhaseOptions.v().setPhaseOption("jop.lcm", "enabled");
         PhaseOptions.v().setPhaseOption("jop.cp", "enabled");
@@ -51,7 +55,8 @@ public class SootLoader
         PhaseOptions.v().setPhaseOption("jop.ule", "enabled");
         if (cmd.hasOption("ssa")) {
             Options.v().set_output_format(Options.output_format_shimple);
-            PhaseOptions.v().setPhaseOption("sop", "enabled");
+            if (enableOpt)
+                PhaseOptions.v().setPhaseOption("sop", "enabled");
             PhaseOptions.v().setPhaseOption("sop.cpf", "enabled");
         }
 

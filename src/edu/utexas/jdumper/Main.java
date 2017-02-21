@@ -65,6 +65,10 @@ public class Main {
                 .desc("disable some of the SSA optimization. Use it in case Soot crashes")
                 .longOpt("disable-ssa-opt")
                 .build();
+        Option noOpt = Option.builder("n")
+                .desc("disable Soot optimization passes (turn this on when it takes forever to dump the program")
+                .longOpt("no-opt")
+                .build();
         Option help = Option.builder("h")
                 .desc("Display help message")
                 .longOpt("help")
@@ -75,6 +79,7 @@ public class Main {
         options.addOption(ssa);
         options.addOption(noSSAOpt);
         options.addOption(allowPhantom);
+        options.addOption(noOpt);
         options.addOption(help);
 
         CommandLineParser parser = new DefaultParser();
